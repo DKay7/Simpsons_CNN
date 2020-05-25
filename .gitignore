@@ -124,3 +124,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+non_balanced_data.zip
+models/simple_model_91.pth
+models/simple_model_2_adamW.pth
+models/simple_model_2_93.pth
+models/resnet50_adamW.pth
+models/model7_adamW.pth
+models/custom_model_advised_adamW.pth
