@@ -3,13 +3,15 @@ import pickle
 import torch.nn as nn
 import torch.nn.functional as f
 import numpy as np
+import pandas as pd
 import torchvision
+import matplotlib.patches as patches
 from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
-import pandas as pd
 from sklearn.model_selection import train_test_split
+from matplotlib.font_manager import FontProperties
 from pathlib import Path
 from DataLoader import DatasetLoader
 from matplotlib import pyplot as plt, ticker
@@ -512,3 +514,60 @@ class NetworkStuff:
                 self.history = torch.load(file)
 
         return self.history
+
+    def predict_one_sample(self, inputs):
+        """Предсказание для одной картинки"""
+        with torch.no_grad():
+            inputs = inputs.to(self.device)
+            self.model.eval()
+            logit = self.model(inputs).cpu()
+            probs = torch.nn.functional.softmax(logit, dim=-1).numpy()
+        return probs
+
+    def draw_prediction(self, num=None, type_='val'):
+        """Отрисовка предсказаний"""
+
+        label_encoder = pickle.load(open("data/label_encoder.pkl", 'rb'))
+
+        fig, ax = plt.subplots(figsize=(7, 7))
+
+        if type_ == 'val':
+            dataset = self.val_dataset
+
+            if num is None:
+                num = int(np.random.randint(0, len(dataset)))
+
+            image, label = dataset[num]
+            label = label_encoder.classes_[label]
+
+        elif type_ == 'test':
+            dataset = self.test_dataset
+
+            if num is None:
+                num = int(np.random.randint(0, len(dataset)))
+
+            image = dataset[num].cpu()
+            label = 'Unknown'
+
+        else:
+            raise NameError
+
+        prediction = self.predict_one_sample(image.unsqueeze(0))
+        predicted_probability = np.max(prediction) * 100
+        predicted_class = np.argmax(prediction)
+        predicted_label = label_encoder.classes_[predicted_class]
+
+        print(f'True class is {label},\n'
+              f'Predicted class is {predicted_label}\n'
+              f"I'm sure for {predicted_probability}%")
+
+        image = image.numpy().transpose((1, 2, 0))
+
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        image = std * image + mean
+
+        image = np.clip(image, 0, 1)
+
+        ax.imshow(image)
+        plt.show()
